@@ -35,6 +35,16 @@ class DataStreamer {
 
     request.send();
   }
+
+  /**
+   * Stream requests to the datafeed server and executes callback function on success
+   * @param callback callback function that takes JSON object as its argument
+   */
+  static streamData(callback: (data: ServerRespond[]) => void, interval: number = 1000): () => void {
+    const timeout = setInterval(() => this.getData(callback), interval);
+
+    return () => clearInterval(timeout);
+  }
 }
 
 export default DataStreamer;

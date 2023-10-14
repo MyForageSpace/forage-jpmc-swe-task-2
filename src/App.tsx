@@ -8,6 +8,7 @@ import './App.css';
  */
 interface IState {
   data: ServerRespond[],
+  streaming: boolean
 }
 
 /**
@@ -15,13 +16,17 @@ interface IState {
  * It renders title, button and Graph react element.
  */
 class App extends Component<{}, IState> {
+  stopStreaming: () => void;
+
   constructor(props: {}) {
     super(props);
 
+    this.stopStreaming = () => null;
     this.state = {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      streaming: false
     };
   }
 
@@ -35,12 +40,16 @@ class App extends Component<{}, IState> {
   /**
    * Get new data from server and update the state with the new data
    */
-  getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+  startStreamingDataFromServer() {
+    if(this.state.streaming) {
+      return;
+    }
+    this.setState(()=> ({ streaming: true }));
+    this.stopStreaming = DataStreamer.streamData((serverResponds: ServerRespond[]) => {
       // Update the state by creating a new array of data that consists of
       // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+      this.setState((s) => ({ data: [...s.data.slice(Math.max(0, s.data.length - 1000)), ...serverResponds] }));
+    }, 500);
   }
 
   /**
@@ -59,11 +68,11 @@ class App extends Component<{}, IState> {
             // As part of your task, update the getDataFromServer() function
             // to keep requesting the data every 100ms until the app is closed
             // or the server does not return anymore data.
-            onClick={() => {this.getDataFromServer()}}>
+            onClick={() => {this.startStreamingDataFromServer()}}>
             Start Streaming Data
           </button>
           <div className="Graph">
-            {this.renderGraph()}
+            {this.state.streaming && this.renderGraph()}
           </div>
         </div>
       </div>
